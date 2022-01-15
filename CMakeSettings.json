@@ -9,7 +9,8 @@
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
-      "ctestCommandArgs": ""
+      "ctestCommandArgs": "",
+      "cmakeToolchain": "D:/workspace/software/vcpkg/scripts/buildsystems/vcpkg.cmake"
     },
     {
       "name": "x64-RelWithDebInfo",
@@ -21,7 +22,7 @@
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "inheritEnvironments": [ "msvc_x64_x64" ],
-      "variables": []
+      "cmakeToolchain": "D:/workspace/software/vcpkg/scripts/buildsystems/vcpkg.cmake"
     }
   ]
 }
