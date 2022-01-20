@@ -14,6 +14,7 @@
 #include <fmt/color.h>
 #include <stdexcept>
 #include <random>
+#include <execution>
 
 #define STR(x) #x
 #ifndef DICTIONARY_FILE
@@ -140,7 +141,7 @@ struct Node {
 };
 
 
-std::unique_ptr<Node> construct(vector<String> words, const vector<String>& split_words) {
+std::unique_ptr<Node> construct(vector<String> words, const vector<String>& vocabulary) {
 	assert(words.size() > 0);
 
 	if (words.size() == 1) {
@@ -149,34 +150,32 @@ std::unique_ptr<Node> construct(vector<String> words, const vector<String>& spli
 		return node;
 	}
 
-	size_t min_split_size = std::numeric_limits<size_t>::max();
-	String min_split_word;
+	using PR = std::pair<int, String>;
+	auto init = PR{ std::numeric_limits<int>::max(), "" };
 
-	for (const auto& word : words) {
+	PR min_split = std::transform_reduce(std::execution::par_unseq, words.begin(), words.end(), init, [](const PR& a, const PR& b) {
+		auto res = std::min(a, b); 
+		return res;
+		}, [&](const String& word) -> PR{
 		auto local_max_size = splitCount(words, word);
-		if (local_max_size < min_split_size) {
-			min_split_size = local_max_size;
-			min_split_word = word;
-		}
-	}
+		return std::make_pair(local_max_size, word);
+	});
 
-	if (split_words.size() != words.size()) {
-		for (const auto& word : split_words) {
+	if (vocabulary.size() != words.size()) {
+		auto local_min = std::transform_reduce(std::execution::par_unseq, vocabulary.begin(), vocabulary.end(), init, [](const PR& a, const PR& b) {return std::min(a, b); }, [&](const String& word) -> PR{
 			auto local_max_size = splitCount(words, word);
-			if (local_max_size < min_split_size) {
-				min_split_size = local_max_size;
-				min_split_word = word;
-			}
-		}
+			return std::make_pair(local_max_size, word);
+		});
+		min_split = std::min(local_min, min_split);
 	}
 
-	auto min_split_result = split(words, min_split_word);
+	auto min_split_result = split(words, min_split.second);
 	auto node = std::make_unique<Node>();
 	node->words = std::move(words);
-	node->splitter = min_split_word;
+	node->splitter = min_split.second;
 
 	for (auto& [k, vec] : min_split_result) {
-		auto sub_node = construct(std::move(vec), split_words);
+		auto sub_node = construct(std::move(vec), vocabulary);
 		node->children[k] = std::move(sub_node);
 	}
 
